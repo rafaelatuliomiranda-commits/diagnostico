@@ -253,10 +253,83 @@
     .result-header,.result-body,.cta-box{padding:24px}
     footer{flex-direction:column;gap:12px;padding:28px 24px;text-align:center}
   }
+
+  /* PASSWORD SCREEN */
+  .pw-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 2rem; position: relative; z-index: 1;
+  }
+  .pw-card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 48px 40px; width: 100%; max-width: 420px;
+    text-align: center; position: relative; overflow: hidden;
+  }
+  .pw-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg,var(--purple),var(--cyan));
+  }
+  .pw-logo {
+    font-family:'Bricolage Grotesque',sans-serif; font-size:22px; font-weight:800;
+    background:linear-gradient(135deg,var(--cyan),var(--purple-soft));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    margin-bottom: 28px; display:block;
+  }
+  .pw-title {
+    font-family:'Bricolage Grotesque',sans-serif; font-size:20px; font-weight:800;
+    color:var(--white); margin-bottom: 8px; letter-spacing:-0.01em;
+  }
+  .pw-sub { font-size:14px; color:rgba(210,205,255,0.7); margin-bottom:28px; line-height:1.6; }
+  .pw-input-wrap { position:relative; margin-bottom:12px; }
+  .pw-input {
+    width:100%; background:rgba(6,0,110,0.6); border:1px solid rgba(123,47,255,0.25);
+    border-radius:8px; color:var(--white); font-family:'Plus Jakarta Sans',sans-serif;
+    font-size:15px; padding:13px 48px 13px 16px; outline:none;
+    transition:border-color .2s; text-align:center; letter-spacing:0.15em;
+  }
+  .pw-input:focus { border-color:rgba(123,47,255,0.6); }
+  .pw-input::placeholder { color:rgba(210,205,255,0.3); letter-spacing:0; }
+  .pw-toggle {
+    position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer; color:rgba(210,205,255,0.5);
+    padding:0; font-size:16px; line-height:1;
+  }
+  .pw-btn {
+    width:100%; padding:14px; margin-top:4px;
+    background:linear-gradient(135deg,var(--purple),var(--purple-soft));
+    color:white; border:none; border-radius:8px;
+    font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; font-weight:700;
+    cursor:pointer; transition:all .2s;
+    box-shadow:0 8px 32px rgba(123,47,255,0.35);
+  }
+  .pw-btn:hover { transform:translateY(-1px); box-shadow:0 12px 40px rgba(123,47,255,0.5); }
+  .pw-err { font-size:12px; color:#ff6b6b; margin-top:8px; display:none; }
 </style>
 </head>
 <body>
 
+<!-- ─────────────────────────────────── -->
+<!-- SENHA DE ACESSO — altere aqui:    -->
+<script>const SENHA_ACESSO = '1404';</script>
+<!-- ─────────────────────────────────── -->
+
+<!-- PASSWORD SCREEN -->
+<div id="pw-screen" class="pw-screen">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="pw-card">
+    <span class="pw-logo">fost</span>
+    <div class="pw-title">Acesso restrito</div>
+    <p class="pw-sub">Digite a senha enviada pelo seu consultor para acessar o formulário de diagnóstico.</p>
+    <div class="pw-input-wrap">
+      <input class="pw-input" type="password" id="pw-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkPw()"/>
+      <button class="pw-toggle" onclick="togglePw()" tabindex="-1" id="pw-toggle-btn">👁</button>
+    </div>
+    <div class="pw-err" id="pw-err">Senha incorreta. Tente novamente.</div>
+    <button class="pw-btn" onclick="checkPw()">Acessar formulário →</button>
+  </div>
+</div>
+
+<div id="main-content" style="display:none;">
 <nav>
   <div class="nav-logo">
     <svg class="nav-logo-icon" viewBox="0 0 28 22" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -585,6 +658,28 @@
 </footer>
 
 <script>
+// Password gate
+function checkPw() {
+  const val = document.getElementById('pw-input').value.trim();
+  if (val === SENHA_ACESSO) {
+    document.getElementById('pw-screen').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    const err = document.getElementById('pw-err');
+    err.style.display = 'block';
+    document.getElementById('pw-input').style.borderColor = 'rgba(255,107,107,0.6)';
+    setTimeout(() => {
+      err.style.display = 'none';
+      document.getElementById('pw-input').style.borderColor = 'rgba(123,47,255,0.25)';
+    }, 3000);
+  }
+}
+function togglePw() {
+  const inp = document.getElementById('pw-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
 document.querySelectorAll('.opt[data-g]').forEach(opt => {
   const isCheck = opt.dataset.c === '1';
   if (isCheck) {
@@ -784,5 +879,6 @@ async function submitForm(){
 }
 updateProgress();
 </script>
+</div>
 </body>
 </html>
