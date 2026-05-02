@@ -335,14 +335,6 @@
           <div class="err" id="err-perfil_cliente">Campo obrigatório</div>
         </div>
 
-        <div class="field">
-          <label class="q" for="logo">Logo da empresa</label>
-          <div id="logo-drop" style="border:1px dashed rgba(123,47,255,0.35);border-radius:8px;padding:28px 20px;text-align:center;cursor:pointer;background:rgba(6,0,110,0.3);transition:border-color .2s,background .2s;" onclick="document.getElementById('logo').click()" ondragover="event.preventDefault();this.style.borderColor='rgba(123,47,255,0.7)'" ondragleave="this.style.borderColor='rgba(123,47,255,0.35)'" ondrop="handleLogoDrop(event)">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="margin:0 auto 10px;display:block;opacity:0.5"><path d="M16 4v16M8 12l8-8 8 8" stroke="#9B59FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 24h24v4H4z" fill="rgba(123,47,255,0.2)" rx="2"/></svg>
-            <p id="logo-label" style="font-size:13px;color:rgba(210,205,255,0.6);margin:0;">Clique ou arraste o arquivo aqui<br/><span style="font-size:11px;color:rgba(210,205,255,0.4);">PNG, JPG ou SVG até 5MB</span></p>
-          </div>
-          <input type="file" id="logo" accept="image/png,image/jpeg,image/svg+xml" style="display:none;" onchange="handleLogoSelect(this)"/>
-        </div>
 
         <div class="field-divider"></div>
         <div class="field">
@@ -699,7 +691,6 @@ function collectData(){
     telefone:document.getElementById('telefone').value.trim(),
     cnpj:document.getElementById('cnpj').value.trim(),
     perfil_cliente:document.getElementById('perfil_cliente').value.trim(),
-    logo_nome:document.getElementById('logo').files[0]?document.getElementById('logo').files[0].name:'',
     site:document.getElementById('site').value.trim(),
     faturamento:'R$ '+document.getElementById('faturamento').value,
     ticket:'R$ '+document.getElementById('ticket').value,
@@ -736,47 +727,49 @@ async function submitForm(){
 
   const data=collectData();
 
-  // Build FormData to support file upload
-  const fd = new FormData();
-  fd.append('Nome',           data.nome);
-  fd.append('Empresa',        data.empresa);
-  fd.append('Email',          data.email);
-  fd.append('WhatsApp',       data.telefone);
-  fd.append('CNPJ',           data.cnpj);
-  fd.append('Site',           data.site);
-  fd.append('Faturamento',    data.faturamento);
-  fd.append('Ticket médio',   data.ticket);
-  fd.append('Vendedores',     data.vendedores);
-  fd.append('Setor',          data.setor);
-  fd.append('Monetização',    data.monetizacao);
-  fd.append('Perfil cliente', data.perfil_cliente);
-  fd.append('Quem vende',     data.quem_vende);
-  fd.append('Leads',          data.leads);
-  fd.append('Processo',       data.processo);
-  fd.append('Funil',          data.funil);
-  fd.append('Critério avanço',data.criterio);
-  fd.append('Ciclo vendas',   data.ciclo);
-  fd.append('Rotina',         data.rotina);
-  fd.append('Opps/semana',    data.opps);
-  fd.append('Follow-up',      data.followup);
-  fd.append('CRM',            data.crm);
-  fd.append('Métricas',       data.metricas);
-  fd.append('Sabe conversão', data.sabe_conversao);
-  fd.append('Maior problema', data.maior_problema);
-  fd.append('Contexto',       data.contexto);
-  fd.append('Data envio',     new Date().toLocaleString('pt-BR'));
-
-  // Attach logo file if selected
-  const logoFile = document.getElementById('logo').files[0];
-  if(logoFile) fd.append('Logo', logoFile, logoFile.name);
+  // Build JSON payload
+  const payload = {
+    _replyto:         data.email,
+    _subject:         'Novo diagnóstico: ' + data.empresa,
+    Nome:             data.nome,
+    Empresa:          data.empresa,
+    Email:            data.email,
+    WhatsApp:         data.telefone,
+    CNPJ:             data.cnpj,
+    Site:             data.site,
+    Faturamento:      data.faturamento,
+    'Ticket médio':   data.ticket,
+    Vendedores:       data.vendedores,
+    Setor:            data.setor,
+    'Monetização':    data.monetizacao,
+    'Perfil cliente': data.perfil_cliente,
+    'Quem vende':     data.quem_vende,
+    Leads:            data.leads,
+    Processo:         data.processo,
+    Funil:            data.funil,
+    'Critério avanço':data.criterio,
+    'Ciclo vendas':   data.ciclo,
+    Rotina:           data.rotina,
+    'Opps por semana':data.opps,
+    'Follow-up':      data.followup,
+    CRM:              data.crm,
+    'Métricas':       data.metricas,
+    'Sabe conversão': data.sabe_conversao,
+    'Maior problema': data.maior_problema,
+    Contexto:         data.contexto,
+    'Data envio':     new Date().toLocaleString('pt-BR'),
+  };
 
   try{
     const res = await fetch(FORMSPREE_URL, {
       method: 'POST',
-      headers: { 'Accept': 'application/json' },
-      body: fd
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
-    if(!res.ok) throw new Error('Formspree error: ' + res.status);
+    if(!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      throw new Error('Formspree error: ' + res.status + ' ' + JSON.stringify(err));
+    }
   } catch(e) {
     console.warn('Formspree erro:', e);
     btn.disabled=false;
