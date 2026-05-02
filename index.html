@@ -328,6 +328,22 @@
           </div>
         </div>
         <div class="field"><label class="q" for="vendedores">Quantos vendedores atuam hoje (incluindo você)?</label><select id="vendedores"><option value="">Selecione</option><option value="1">Só eu</option><option value="2-3">2 a 3</option><option value="4-8">4 a 8</option><option value="9+">Mais de 8</option></select></div>
+
+        <div class="field">
+          <label class="q" for="perfil_cliente">Para quem você vende? (perfil do cliente ideal)<span class="req">*</span></label>
+          <textarea id="perfil_cliente" placeholder="Ex: empresas B2B com faturamento acima de R$ 500k, setor de tecnologia, com time de vendas entre 3 e 10 pessoas, que já tentaram estruturar processos mas ainda dependem do fundador..." style="min-height:120px;"></textarea>
+          <div class="err" id="err-perfil_cliente">Campo obrigatório</div>
+        </div>
+
+        <div class="field">
+          <label class="q" for="logo">Logo da empresa</label>
+          <div id="logo-drop" style="border:1px dashed rgba(123,47,255,0.35);border-radius:8px;padding:28px 20px;text-align:center;cursor:pointer;background:rgba(6,0,110,0.3);transition:border-color .2s,background .2s;" onclick="document.getElementById('logo').click()" ondragover="event.preventDefault();this.style.borderColor='rgba(123,47,255,0.7)'" ondragleave="this.style.borderColor='rgba(123,47,255,0.35)'" ondrop="handleLogoDrop(event)">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="margin:0 auto 10px;display:block;opacity:0.5"><path d="M16 4v16M8 12l8-8 8 8" stroke="#9B59FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 24h24v4H4z" fill="rgba(123,47,255,0.2)" rx="2"/></svg>
+            <p id="logo-label" style="font-size:13px;color:rgba(210,205,255,0.6);margin:0;">Clique ou arraste o arquivo aqui<br/><span style="font-size:11px;color:rgba(210,205,255,0.4);">PNG, JPG ou SVG até 5MB</span></p>
+          </div>
+          <input type="file" id="logo" accept="image/png,image/jpeg,image/svg+xml" style="display:none;" onchange="handleLogoSelect(this)"/>
+        </div>
+
         <div class="field-divider"></div>
         <div class="field">
           <label class="q">Setor do negócio (pode marcar mais de um)</label>
@@ -604,6 +620,27 @@ document.querySelectorAll('.opt[data-g]').forEach(opt => {
   }
 });
 
+function handleLogoSelect(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    if (file.size > 5 * 1024 * 1024) { alert('Arquivo muito grande. Máximo 5MB.'); return; }
+    document.getElementById('logo-label').innerHTML =
+      '<span style="color:rgba(155,89,255,0.9);">✓ ' + file.name + '</span>';
+    document.getElementById('logo-drop').style.borderColor = 'rgba(123,47,255,0.7)';
+    document.getElementById('logo-drop').style.background = 'rgba(123,47,255,0.1)';
+  }
+}
+
+function handleLogoDrop(e) {
+  e.preventDefault();
+  const dt = e.dataTransfer;
+  if (dt.files && dt.files[0]) {
+    document.getElementById('logo').files = dt.files;
+    handleLogoSelect(document.getElementById('logo'));
+  }
+  e.currentTarget.style.borderColor = 'rgba(123,47,255,0.35)';
+}
+
 function updateProgress() {
   const req = ['q_quem_vende','q_processo','q_funil','q_rotina','q_crm','q_maior_problema'];
   const filled = req.filter(n => !!getRadio(n)).length;
@@ -644,6 +681,8 @@ function validate(){
   showErr('email',!validEmail(email));if(!validEmail(email))ok=false;
   showErr('telefone',!telefone);if(!telefone)ok=false;
   showErr('cnpj',!cnpj);if(!cnpj)ok=false;
+  const perfil_cliente=document.getElementById('perfil_cliente').value.trim();
+  showErr('perfil_cliente',!perfil_cliente);if(!perfil_cliente)ok=false;
   ['q_monetizacao','q_quem_vende','q_processo','q_funil','q_rotina','q_crm','q_maior_problema'].forEach(f=>{
     const v=getRadio(f);showErr(f,!v);if(!v)ok=false;
   });
@@ -659,6 +698,8 @@ function collectData(){
     email:document.getElementById('email').value.trim(),
     telefone:document.getElementById('telefone').value.trim(),
     cnpj:document.getElementById('cnpj').value.trim(),
+    perfil_cliente:document.getElementById('perfil_cliente').value.trim(),
+    logo_nome:document.getElementById('logo').files[0]?document.getElementById('logo').files[0].name:'',
     site:document.getElementById('site').value.trim(),
     faturamento:'R$ '+document.getElementById('faturamento').value,
     ticket:'R$ '+document.getElementById('ticket').value,
@@ -682,7 +723,7 @@ function collectData(){
   };
 }
 
-const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/oyp3tx2i1x7uej93mmswvl4w44djfct8';
+const FORMSPREE_URL = 'https://formspree.io/f/mpqbwewq';
 
 async function submitForm(){
   if(!validate()){
@@ -695,45 +736,55 @@ async function submitForm(){
 
   const data=collectData();
 
+  // Build FormData to support file upload
+  const fd = new FormData();
+  fd.append('Nome',           data.nome);
+  fd.append('Empresa',        data.empresa);
+  fd.append('Email',          data.email);
+  fd.append('WhatsApp',       data.telefone);
+  fd.append('CNPJ',           data.cnpj);
+  fd.append('Site',           data.site);
+  fd.append('Faturamento',    data.faturamento);
+  fd.append('Ticket médio',   data.ticket);
+  fd.append('Vendedores',     data.vendedores);
+  fd.append('Setor',          data.setor);
+  fd.append('Monetização',    data.monetizacao);
+  fd.append('Perfil cliente', data.perfil_cliente);
+  fd.append('Quem vende',     data.quem_vende);
+  fd.append('Leads',          data.leads);
+  fd.append('Processo',       data.processo);
+  fd.append('Funil',          data.funil);
+  fd.append('Critério avanço',data.criterio);
+  fd.append('Ciclo vendas',   data.ciclo);
+  fd.append('Rotina',         data.rotina);
+  fd.append('Opps/semana',    data.opps);
+  fd.append('Follow-up',      data.followup);
+  fd.append('CRM',            data.crm);
+  fd.append('Métricas',       data.metricas);
+  fd.append('Sabe conversão', data.sabe_conversao);
+  fd.append('Maior problema', data.maior_problema);
+  fd.append('Contexto',       data.contexto);
+  fd.append('Data envio',     new Date().toLocaleString('pt-BR'));
+
+  // Attach logo file if selected
+  const logoFile = document.getElementById('logo').files[0];
+  if(logoFile) fd.append('Logo', logoFile, logoFile.name);
+
   try{
-    await fetch(MAKE_WEBHOOK_URL, {
+    const res = await fetch(FORMSPREE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      mode: 'no-cors',
-      body: JSON.stringify({
-        nome:           data.nome,
-        empresa:        data.empresa,
-        email:          data.email,
-        telefone:       data.telefone,
-        cnpj:           data.cnpj,
-        site:           data.site,
-        faturamento:    data.faturamento,
-        ticket:         data.ticket,
-        vendedores:     data.vendedores,
-        setor:          data.setor,
-        monetizacao:    data.monetizacao,
-        quem_vende:     data.quem_vende,
-        leads:          data.leads,
-        processo:       data.processo,
-        funil:          data.funil,
-        criterio:       data.criterio,
-        ciclo:          data.ciclo,
-        rotina:         data.rotina,
-        opps:           data.opps,
-        followup:       data.followup,
-        crm:            data.crm,
-        metricas:       data.metricas,
-        sabe_conversao: data.sabe_conversao,
-        maior_problema: data.maior_problema,
-        contexto:       data.contexto,
-        data_envio:     new Date().toLocaleString('pt-BR'),
-      })
+      headers: { 'Accept': 'application/json' },
+      body: fd
     });
+    if(!res.ok) throw new Error('Formspree error: ' + res.status);
   } catch(e) {
-    console.warn('Webhook erro:', e);
+    console.warn('Formspree erro:', e);
+    btn.disabled=false;
+    btn.textContent='Gerar meu diagnóstico →';
+    alert('Erro ao enviar. Verifique sua conexão e tente novamente.');
+    return;
   }
 
-  // Mostra tela de agradecimento independente do status do fetch (no-cors não retorna status)
   document.getElementById('form-area').style.display = 'none';
   document.getElementById('thankyou').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
